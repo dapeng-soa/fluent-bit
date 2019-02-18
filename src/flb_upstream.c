@@ -174,6 +174,8 @@ struct flb_upstream_conn *flb_upstream_conn_get(struct flb_upstream *u)
      */
     if (mk_list_is_empty(&u->av_queue) == 0) {
 
+
+	/*	flb_debug("flb_upstream_conn_get_create_conn");*/
         if (u->max_connections <= 0) {
             u_conn = create_conn(u);
         }
@@ -186,6 +188,8 @@ struct flb_upstream_conn *flb_upstream_conn_get(struct flb_upstream *u)
     }
     else {
         /* Get an available connection */
+
+		/*flb_debug("flb_upstream_conn_get_get_conn");*/
         u_conn = get_conn(u);
     }
 

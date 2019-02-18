@@ -2,6 +2,7 @@
 
 /*  Fluent Bit
  *  ==========
+ *  Copyright (C) 2019      The Fluent Bit Authors
  *  Copyright (C) 2015-2018 Treasure Data Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -262,7 +263,8 @@ struct flb_output_instance *flb_output_new(struct flb_config *config,
     instance->match       = NULL;
     instance->retry_limit = 1;
     instance->host.name   = NULL;
-
+    instance->host_standby.name = NULL;
+	
     /* Parent plugin flags */
     flags = instance->flags;
     if (flags & FLB_IO_TCP) {
@@ -357,7 +359,19 @@ int flb_output_set_property(struct flb_output_instance *out, char *k, char *v)
         else {
             out->host.port = 0;
         }
-    }
+	}
+	else if (prop_key_check("hoststandby", k, len) == 0) {
+		out->host_standby.name = tmp;
+	}
+	else if (prop_key_check("portstandby", k, len) == 0) {
+		if (tmp) {
+			out->host_standby.port = atoi(tmp);
+			flb_free(tmp);
+		}
+		else {
+			out->host_standby.port = 0;
+		}
+	}
     else if (prop_key_check("ipv6", k, len) == 0 && tmp) {
         out->host.ipv6 = flb_utils_bool(tmp);
         flb_free(tmp);
@@ -452,7 +466,7 @@ int flb_output_init(struct flb_config *config)
     int ret;
     struct mk_list *tmp;
     struct mk_list *head;
-    struct flb_output_instance *ins;
+    struct flb_output_instance *ins = NULL;
     struct flb_output_plugin *p;
 
     /* We need at least one output */

@@ -34,6 +34,8 @@ struct flb_tail_config {
     size_t buf_chunk_size;     /* allocation chunks        */
     size_t buf_max_size;       /* max size of a buffer     */
 
+	size_t db_count;              /* offset 刷新频率次数 */
+
     /* Collectors */
     int coll_fd_static;
     int coll_fd_scan;

@@ -527,12 +527,29 @@ int flb_tail_file_append(char *path, struct stat *st, int mode,
         }
     }
 
+
+	//未配置db的情况下，从文件末尾开始读
+	if (!ctx->db) {
+		offset = lseek(file->fd, 0, SEEK_END);
+		if (offset == -1) {
+			flb_errno();
+			flb_tail_file_remove(file);
+			return -1;
+		}
+		file->offset = offset;
+	}
+
     flb_debug("[in_tail] add to scan queue %s, offset=%lu", path, file->offset);
     return 0;
 }
 
 void flb_tail_file_remove(struct flb_tail_file *file)
 {
+	//当fluent-bit宕掉时，将未写入db的offset写入db
+	if (file->config->db) {
+		flb_tail_db_file_offset(file, file->config);
+	}
+
     if (file->rotated > 0) {
         mk_list_del(&file->_rotate_head);
     }
@@ -580,6 +597,8 @@ int flb_tail_file_chunk(struct flb_tail_file *file)
     off_t processed_bytes;
     ssize_t bytes;
     struct flb_tail_config *ctx;
+	static int count = 0; //记录写入chunk的次数
+	static time_t timer = 0; //记录写db的时间
 
     /* Check if we the engine issued a pause */
     ctx = file->config;
@@ -665,9 +684,15 @@ int flb_tail_file_chunk(struct flb_tail_file *file)
         file->buf_len -= processed_bytes;
         file->buf_data[file->buf_len] = '\0';
 
-        if (file->config->db) {
-            flb_tail_db_file_offset(file, file->config);
-        }
+		// 如果开启了db，将offset写入db
+		if (file->config->db) {
+			//当count达到配置的次数或者距离上次写入的时间超过1分钟，将offset写入到db
+			if (++count == file->config->db_count || time(NULL) - timer > 60) {
+				flb_tail_db_file_offset(file, file->config);
+				timer = time(NULL);
+				count = 0;
+			}
+		}
 
         /* Data was consumed but likely some bytes still remain */
         return FLB_TAIL_OK;

@@ -29,7 +29,7 @@ set(FLB_VERSION_STR "${FLB_VERSION_MAJOR}.${FLB_VERSION_MINOR}.${FLB_VERSION_PAT
 # Build Options
 option(FLB_ALL                "Enable all features"          No)
 option(FLB_DEBUG              "Build with debug symbols"     No)
-option(FLB_JEMALLOC           "Build with Jemalloc support"  No)
+option(FLB_JEMALLOC           "Build with Jemalloc support" Yes)
 option(FLB_REGEX              "Build wiht Regex support"    Yes)
 option(FLB_TLS                "Build with SSL/TLS support"   No)
 option(FLB_WITHOUT_BIN        "Do not build executable"      No)
@@ -153,6 +153,8 @@ if(FLB_ALL)
   set(FLB_OUT_LIB      1)
   set(FLB_OUT_FLOWCOUNTER 1)
 endif()
+
+set(FLB_TRACE, On)
 
 if(FLB_DEV)
   set(FLB_DEBUG          On)

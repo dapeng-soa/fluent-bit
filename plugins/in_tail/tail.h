@@ -38,6 +38,8 @@
 #define FLB_TAIL_REFRESH      60      /* refresh every 60 seconds       */
 #define FLB_TAIL_ROTATE_WAIT  5       /* time to monitor after rotation */
 
+#define FLB_TAIL_DB_COUNT     50      /* offset刷新到db的频率，单位次数*/
+
 int in_tail_collect_event(void *file, struct flb_config *config);
 
 #endif

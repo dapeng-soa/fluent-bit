@@ -147,6 +147,12 @@ struct flb_output_instance {
      */
     struct flb_net_host host;
 
+	/*
+	* standby host
+	*/
+	struct flb_net_host host_standby;
+
+
     /*
      * Optional data passed to the plugin, this info is useful when
      * running Fluent Bit in library mode and the target plugin needs

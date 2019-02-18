@@ -813,7 +813,6 @@ int main(int argc, char **argv)
     if (config->verbose == FLB_TRUE) {
         flb_utils_print_setup(config);
     }
-
 #ifdef FLB_HAVE_FORK
     /* Run in background/daemon mode */
     if (config->daemon == FLB_TRUE) {
@@ -822,9 +821,10 @@ int main(int argc, char **argv)
 #endif
 
     ret = flb_engine_start(config);
+
     if (ret == -1) {
+
         flb_engine_shutdown(config);
     }
-
     return 0;
 }

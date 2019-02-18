@@ -47,6 +47,7 @@ struct flb_out_forward_config {
 
     /* Upstream handler */
     struct flb_upstream *u;
+	struct flb_upstream *u_standby;
 };
 
 #endif

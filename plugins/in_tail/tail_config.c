@@ -190,6 +190,28 @@ struct flb_tail_config *flb_tail_config_create(struct flb_input_instance *i_ins,
         ctx->buf_chunk_size = FLB_TAIL_CHUNK;
     }
 
+
+
+	/* 获取offset刷新频率次数 */
+	tmp = flb_input_get_property("db_count",i_ins);
+	if (tmp) {
+		bytes = flb_utils_size_to_bytes(tmp);
+		if (bytes > 0) {
+			ctx->db_count = (size_t) bytes;
+		}
+		else {
+			ctx->db_count = FLB_TAIL_DB_COUNT;
+		}
+	}
+	else {
+		ctx->db_count = FLB_TAIL_DB_COUNT;
+	}
+
+
+
+
+
+
     /* Config: buffer maximum size */
     tmp = flb_input_get_property("buffer_max_size", i_ins);
     if (tmp) {

@@ -26,6 +26,7 @@
 #include <fluent-bit/flb_time.h>
 #include <fluent-bit/flb_error.h>
 #include <fluent-bit/flb_utils.h>
+#include <fluent-bit/flb_env.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -434,6 +435,10 @@ int flb_parser_conf_file(char *file, struct flb_config *config)
             goto fconf_error;
         }
 
+		//parser.conf文件支持从环境变量里面读值
+		regex = flb_env_var_translate(config->env,regex);
+
+
         /* Time_Format */
         time_fmt = mk_rconf_section_get_key(section, "Time_Format",
                                             MK_RCONF_STR);
@@ -478,7 +483,6 @@ int flb_parser_conf_file(char *file, struct flb_config *config)
         }
 
         flb_debug("[parser] new parser registered: %s", name);
-
         flb_free(name);
         flb_free(format);
 

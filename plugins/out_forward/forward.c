@@ -374,6 +374,7 @@ int cb_forward_init(struct flb_output_instance *ins, struct flb_config *config,
     char *tmp;
     struct flb_out_forward_config *ctx;
     struct flb_upstream *upstream;
+	struct flb_upstream *upstreamStandby;
     (void) data;
 
     ctx = flb_calloc(1, sizeof(struct flb_out_forward_config));
@@ -419,6 +420,18 @@ int cb_forward_init(struct flb_output_instance *ins, struct flb_config *config,
         return -1;
     }
     ctx->u = upstream;
+
+	/*create backup upstream handler*/
+
+	upstreamStandby = flb_upstream_create(config,
+										  ins->host_standby.name,
+										  ins->host_standby.port,
+										  io_flags, (void *)&ins->tls);
+	if (!upstreamStandby) {
+		flb_free(ctx);
+		return -1;
+	}
+	ctx->u_standby = upstreamStandby;
 
     if (ctx->secured == FLB_TRUE) {
         /* Shared Key */
@@ -552,6 +565,7 @@ void cb_forward_flush(void *data, size_t bytes,
     size_t out_size = 0;
     struct flb_out_forward_config *ctx = out_context;
     struct flb_upstream_conn *u_conn;
+	static int flag = 0;
     (void) i_ins;
     (void) config;
 
@@ -578,16 +592,43 @@ void cb_forward_flush(void *data, size_t bytes,
     msgpack_pack_array(&mp_pck, entries);
 
     /* Get a TCP connection instance */
-    u_conn = flb_upstream_conn_get(ctx->u);
-    if (!u_conn) {
-        flb_error("[out_fw] no upstream connections available");
-        msgpack_sbuffer_destroy(&mp_sbuf);
-        if (ctx->time_as_integer == FLB_TRUE) {
-            flb_free(out_buf);
-        }
-        FLB_OUTPUT_RETURN(FLB_RETRY);
-    }
+	if (flag == 0) {
 
+		u_conn = flb_upstream_conn_get(ctx->u);
+		if (!u_conn) {
+			flb_debug("[out_fw] %s:%d TCP fail,try hoststandby", ctx->u->tcp_host, ctx->u->tcp_port);
+
+			/*TCP standby*/
+			u_conn = flb_upstream_conn_get(ctx->u_standby);
+			flag = 1;
+			if (!u_conn) {
+				flb_error("[out_fw] no upstream connections available");
+				msgpack_sbuffer_destroy(&mp_sbuf);
+				if (ctx->time_as_integer == FLB_TRUE) {
+					flb_free(out_buf);
+				}
+				FLB_OUTPUT_RETURN(FLB_RETRY);
+			}
+		}
+	}
+	else
+	{
+		u_conn = flb_upstream_conn_get(ctx->u_standby);
+		if (!u_conn) {
+			flb_debug("[out_fw] %s:%d TCP fail,try mainhost", ctx->u_standby->tcp_host, ctx->u_standby->tcp_port);
+			/*TCP standby*/
+			u_conn = flb_upstream_conn_get(ctx->u);
+			flag = 0;
+			if (!u_conn) {
+				flb_error("[out_fw] no upstream connections available");
+				msgpack_sbuffer_destroy(&mp_sbuf);
+				if (ctx->time_as_integer == FLB_TRUE) {
+					flb_free(out_buf);
+				}
+				FLB_OUTPUT_RETURN(FLB_RETRY);
+			}
+		}
+	}
     /* Secure Forward ? */
 #ifdef FLB_HAVE_TLS
     if (ctx->secured == FLB_TRUE) {
